@@ -34,8 +34,12 @@ public class SocialMediaController {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
-        app.post("/messages", this::messageHandler);
+        app.post("/messages", this::CreateMessageHandler);
         app.get("/messages", this::getMessageHandler);
+        app.get("/messages/{message_id}", this::getMessageByIDHandler);
+        app.delete("/messages/{message_id}", this::deleteMessageByIDHandler);
+        app.patch("/messages/{message_id}", this::updateMessageByIDHandler);
+        app.get("/accounts/{account_id}/messages", this::getMessagesByUserHandler);
         return app;
     }
 
@@ -73,7 +77,7 @@ public class SocialMediaController {
         }
     }
 
-    private void messageHandler(Context context) throws JsonProcessingException {
+    private void CreateMessageHandler(Context context) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         Message message = mapper.readValue(context.body(), Message.class);
         System.out.println(message.getMessage_id() + " " + message.getMessage_text() + " " + message.getPosted_by() + " " + message.getTime_posted_epoch());
@@ -94,4 +98,53 @@ public class SocialMediaController {
         ctx.status(200);
     }
 
+    public void getMessageByIDHandler(Context ctx){
+        System.out.println("Hello");
+        String id = ctx.pathParam("message_id");
+        int messageID = Integer.parseInt(id);
+        Message message = messageService.getMessageByID(messageID);
+        if(message != null)
+            ctx.json(message);
+        else
+            System.out.println("No Message Found");
+    }
+
+    public void deleteMessageByIDHandler(Context ctx){
+        System.out.println("Hello");
+        String id = ctx.pathParam("message_id");
+        int messageID = Integer.parseInt(id);
+        Message message = messageService.deleteMessageByID(messageID);
+        if(message != null)
+            ctx.json(message);
+        else
+            System.out.println("No Message Found");
+    }
+
+    private void updateMessageByIDHandler(Context context) throws JsonProcessingException {
+        String id = context.pathParam("message_id");
+        int messageID = Integer.parseInt(id);
+        ObjectMapper mapper = new ObjectMapper();
+        Message message = mapper.readValue(context.body(), Message.class);
+        String message_text = message.getMessage_text();
+        Message update = messageService.updateMessage(message_text, messageID);
+        if(update!=null){
+            context.status(200);
+            System.out.println("Success");
+            context.json(mapper.writeValueAsString(update));
+        }else{
+            System.out.println("Failure");
+            context.status(400);
+        }
+    }
+
+    public void getMessagesByUserHandler(Context ctx){
+        System.out.println("Hello");
+        String id = ctx.pathParam("account_id");
+        int posted_by = Integer.parseInt(id);
+        List<Message> messages = messageService.getMessagesByUser(posted_by);
+        if(messages != null)
+            ctx.json(messages);
+        else
+            System.out.println("No Messages Found");
+    }
 }
